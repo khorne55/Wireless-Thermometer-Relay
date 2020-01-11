@@ -45,17 +45,18 @@ void callback(char* topic, byte* payload, unsigned int length) {
     char receivedChar = (char) payload[i];
     if (receivedChar == '0')
       digitalWrite(RELAYPIN, LOW);
+      mqtt.publish("HACK_ROOM_RELAY","On");
 
     if (receivedChar == '1')
       digitalWrite(RELAYPIN, HIGH);
-
+      mqtt.publish("HACK_ROOM_RELAY","Off");
   }
 }
 
 //MQTT Connection and subcribe
 void reconnect() {
   while (!mqtt.connected()) {
-    if (mqtt.connect("KITCHEN")) {
+    if (mqtt.connect("HACK_ROOM")) {
       mqtt.subscribe("HACK_ROOM_IN");
     } else {
       Serial.println(mqtt.state());
@@ -181,6 +182,12 @@ void loop() {
       data = "temp=" + String(t / t_count) + "&hum=" + String(h / t_count);
       Serial.println(t_count);
       Serial.printf("Total: %d\n", t);
+
+      //Send Temperature to MQTT
+      String mqtt_temp=String(t / t_count);
+      mqtt_temp.toCharArray(data_arr, mqtt_temp.length()+1);
+      mqtt.publish("HACK_ROOM_OUT",data_arr);
+      
       t_count = 0, t = 0, h = 0; //Reset counter.
       //Update Last_Time
       last_time = timepassed;
@@ -193,8 +200,6 @@ void loop() {
         client.println(data.length());
         client.println();
         client.print(data);
-        data.toCharArray(data_arr, data.length()+1);
-        mqtt.publish("HACK_ROOM_OUT",data_arr);
         Serial.println("Data Upload:Success");
       }
 
